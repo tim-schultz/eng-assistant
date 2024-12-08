@@ -50,10 +50,13 @@ checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
 [[package]]
 name = "anthropic-sdk"
 version = "0.1.4"
+source = "git+https://github.com/tim-schultz/anthropic-sdk.git#ce8c1de64fcab37f146b2b49678d39c113519d97"
 dependencies = [
  "anyhow",
+ "async-trait",
  "dotenv",
  "futures",
+ "mockall",
  "reqwest",
  "serde",
  "serde_json",
@@ -196,6 +199,17 @@ name = "async-task"
 version = "4.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
+
+[[package]]
+name = "async-trait"
+version = "0.1.83"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "721cae7de5c34fbb2acd27e21e6d2cf7b886dce0c27388d46c4e6c47ea4318dd"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "atomic-waker"
@@ -486,9 +500,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
+checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "flate2"
@@ -1041,6 +1055,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "mcp-client-rs"
 version = "0.1.0"
+source = "git+https://github.com/tim-schultz/mcp-client-rs.git#1c7de4a5936c3779629d668c556cb45ca64c757e"
 dependencies = [
  "anyhow",
  "dotenv",
