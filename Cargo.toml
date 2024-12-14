@@ -23,6 +23,7 @@ tempfile = "3.10.1"
 dotenv = "0.15.0"
 
 mcp-client-rs = { git = "https://github.com/tim-schultz/mcp-client-rs.git" }
-anthropic-sdk = { git = "https://github.com/tim-schultz/anthropic-sdk.git" }
+# anthropic-sdk = { git = "https://github.com/tim-schultz/anthropic-sdk.git" }
+anthropic-sdk = { path = "../anthropic-sdk" }
 mockall = "0.13.1"
 

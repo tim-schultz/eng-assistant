@@ -7,7 +7,7 @@ use std::io::Read;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
-use anthropic_sdk::{AnthropicResponse, Client, ContentItem};
+use anthropic_sdk::{AnthropicResponse, ClientType, ContentItem, LLMClientType};
 use anyhow::{anyhow, Context, Result};
 use log::{debug, info, warn};
 use serde_json::{json, Value};
@@ -22,7 +22,7 @@ use dotenv::dotenv;
 pub const MAX_CONTINUATION_ITERATIONS: i8 = 25;
 
 pub struct Assistant<'a> {
-    client: Client,
+    client: LLMClientType,
     system_prompt: String,
     conversation: CurrentConversation,
     tool_executor: ToolExecutor,
@@ -131,11 +131,12 @@ impl<'a> Assistant<'a> {
         dotenv().ok();
 
         let active_tools = Self::merge_tools(tools)?;
-        let client = Self::create_client(model, streaming, &active_tools)?;
         let system_prompt = custom_system_prompt
             .unwrap_or_else(|| format!("\n{}\n{}", BASE_SYSTEM_PROMPT, CHAIN_OF_THOUGHT_PROMPT));
+        let client = Self::create_client(model, streaming, &active_tools, system_prompt.clone())?;
 
-        let tool_client = client.clone().system(&system_prompt);
+        let tool_client =
+            Self::create_client(model, streaming, &active_tools, system_prompt.clone())?;
         let tool_executor = ToolExecutor::new(tool_client)?;
 
         Ok(Self {
@@ -148,17 +149,21 @@ impl<'a> Assistant<'a> {
     }
 
     /// Create an Anthropic client with specified configuration
-    fn create_client(model: &str, streaming: bool, tools: &Value) -> Result<Client> {
-        let api_key =
-            std::env::var("ANTHROPIC_API_KEY_RS").context("Missing ANTHROPIC_API_KEY_RS")?;
+    fn create_client(
+        model: &str,
+        streaming: bool,
+        tools: &Value,
+        system_prompt: String,
+    ) -> Result<LLMClientType> {
+        let client = LLMClientType::new(
+            ClientType::Anthropic,
+            model,
+            streaming,
+            Some(tools.clone()),
+            Some(system_prompt),
+        )?;
 
-        Ok(Client::new()
-            .auth(&api_key)
-            .model(model)
-            .stream(streaming)
-            .max_tokens(4000)
-            .tools(tools)
-            .beta("prompt-caching-2024-07-31"))
+        Ok(client)
     }
 
     /// Merge custom tools with default tools
@@ -204,19 +209,14 @@ impl<'a> Assistant<'a> {
         messages: Value,
         tool_choice: Option<Value>,
     ) -> Result<AnthropicResponse> {
-        let mut request = self
-            .client
-            .clone()
-            .messages(&messages)
-            .system(&self.system_prompt);
+        self.client.with_messages(messages)?;
 
-        if let Some(choice) = tool_choice {
-            request = request.tool_choice(choice);
-        }
+        // TODO: Implement tool choice configuration within CLIENT
+        // if let Some(choice) = tool_choice {
+        //     request = request.tool_choice(choice);
+        // }
 
-        let request = request.build().context("Failed to build request")?;
-
-        request
+        self.client
             .execute_and_return_json()
             .await
             .context("Failed to execute request")
@@ -241,15 +241,10 @@ impl<'a> Assistant<'a> {
         let message = Arc::new(Mutex::new(String::new()));
         let message_clone = message.clone();
 
-        let request = self
-            .client
-            .clone()
-            .messages(&messages)
-            .system(&self.system_prompt)
-            .build()?;
+        self.client.with_messages(messages)?;
 
-        request
-            .execute(move |text| {
+        self.client
+            .stream_message(move |text| {
                 let msg = message_clone.clone();
                 async move {
                     println!("{text}");

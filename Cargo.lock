@@ -49,8 +49,7 @@ checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
 
 [[package]]
 name = "anthropic-sdk"
-version = "0.1.4"
-source = "git+https://github.com/tim-schultz/anthropic-sdk.git#ce8c1de64fcab37f146b2b49678d39c113519d97"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",

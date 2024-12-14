@@ -1,5 +1,6 @@
-use anthropic_sdk::Client;
 use anthropic_sdk::ContentItem;
+use anthropic_sdk::LLMClient;
+use anthropic_sdk::LLMClientType;
 use anyhow::{anyhow, Result};
 use async_recursion::async_recursion;
 use console::Term;
@@ -176,7 +177,7 @@ pub static TOOLS: Lazy<Value> = Lazy::new(|| {
 });
 
 pub struct ToolExecutor {
-    client: Client,
+    client: LLMClientType,
     code_editor_tokens: HashMap<String, u32>,
     code_editor_memory: Vec<String>,
     code_editor_files: HashSet<String>,
@@ -190,7 +191,7 @@ pub struct EditInstruction {
 }
 
 impl ToolExecutor {
-    pub fn new(client: Client) -> Result<Self> {
+    pub fn new(client: LLMClientType) -> Result<Self> {
         let current_conversation = CurrentConversation::new();
         Ok(Self {
             client,
@@ -464,19 +465,15 @@ impl ToolExecutor {
 
         info!("Sending edit instructions: {}", system_prompt);
 
-        let request = self
-            .client
-            .clone()
-            .system(&system_prompt)
-            .messages(&json!([{"role": "user", "content": "Generate SEARCH/REPLACE blocks for the necessary changes."}]))
-            .build()?;
+        self.client.with_messages(json!([{"role": "user", "content": "Generate SEARCH/REPLACE blocks for the necessary changes."}]))?;
+        self.client.with_system_prompt(system_prompt.clone())?;
 
         self.current_conversation.create(Message {
             role: "assistant".to_string(),
             content: MessageContent::Text(system_prompt),
         });
 
-        let response = request.execute_and_return_json().await?;
+        let response = self.client.execute_and_return_json().await?;
 
         self.code_editor_tokens
             .entry("input".to_string())
@@ -783,6 +780,7 @@ mod tests {
     use std::{env, path::PathBuf};
 
     use super::*;
+    use anthropic_sdk::ClientType;
     use tempfile::tempdir;
     use tokio;
 
@@ -792,7 +790,7 @@ mod tests {
         let current_path = PathBuf::from(env::current_dir().unwrap()).join(current_file);
         let current_path_str = current_path.to_str().unwrap();
 
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let original_content = fs::read_to_string(current_path_str).unwrap();
         let edit_result = executor
@@ -822,7 +820,7 @@ mod tests {
 
     #[test]
     fn test_create_folder() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
         let folder_path = temp_dir.path().join("test_folder");
@@ -839,7 +837,7 @@ mod tests {
 
     #[test]
     fn test_create_file() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test_file.txt");
@@ -858,7 +856,7 @@ mod tests {
 
     #[test]
     fn test_read_file() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test_read.txt");
@@ -871,7 +869,7 @@ mod tests {
 
     #[test]
     fn test_list_files() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
         fs::write(temp_dir.path().join("file1.txt"), "").unwrap();
@@ -888,7 +886,7 @@ mod tests {
 
     #[test]
     fn test_compile_rust_project_success() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
 
@@ -920,7 +918,7 @@ edition = "2021"
 
     #[test]
     fn test_compile_rust_project_error() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
 
@@ -953,7 +951,7 @@ edition = "2021"
 
     #[test]
     fn test_compile_rust_project_missing_cargo_toml() {
-        let client = Client::new();
+        let client = LLMClientType::new(ClientType::Anthropic, "model", false, None, None).unwrap();
         let executor = ToolExecutor::new(client).unwrap();
         let temp_dir = tempdir().unwrap();
 
