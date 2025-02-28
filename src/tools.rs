@@ -28,20 +28,20 @@ use once_cell::sync::Lazy;
 
 pub static TOOLS: Lazy<Value> = Lazy::new(|| {
     json!([
-        {
-            "name": "search_source_code",
-            "description": "Search the project's source code for specific patterns or information. Use this when you need to find relevant code snippets or documentation within the project.",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "The search query or question about the source code"
-                    }
-                },
-                "required": ["question"]
-            }
-        },
+        // {
+        //     "name": "search_source_code",
+        //     "description": "Search the project's source code for specific patterns or information. Use this when you need to find relevant code snippets or documentation within the project.",
+        //     "input_schema": {
+        //         "type": "object",
+        //         "properties": {
+        //             "question": {
+        //                 "type": "string",
+        //                 "description": "The search query or question about the source code"
+        //             }
+        //         },
+        //         "required": ["question"]
+        //     }
+        // },
         {
             "name": "create_folder",
             "description": "Create a new folder at the specified path. Use this when you need to create a new directory in the project structure.",
